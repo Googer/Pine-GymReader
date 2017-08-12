@@ -3,10 +3,13 @@ package org.pgp;
 import java.util.Objects;
 
 public final class Gym implements Comparable<Gym> {
-  private final long gymId;
-  private final String gymName;
+  private long gymId;
+  private String gymName;
 
-  private final GymInfo gymInfo;
+  private GymInfo gymInfo;
+
+  public Gym() {
+  }
 
   public Gym(final long gymId, final String gymName) {
     this(gymId, gymName, null);
@@ -18,20 +21,28 @@ public final class Gym implements Comparable<Gym> {
     this.gymInfo = gymInfo;
   }
 
-  public Gym withGymInfo(final GymInfo gymInfo) {
-    return new Gym(gymId, gymName, gymInfo);
-  }
-
   public long getGymId() {
     return gymId;
+  }
+
+  public void setGymId(final long gymId) {
+    this.gymId = gymId;
   }
 
   public String getGymName() {
     return gymName;
   }
 
+  public void setGymName(final String gymName) {
+    this.gymName = gymName;
+  }
+
   public GymInfo getGymInfo() {
     return gymInfo;
+  }
+
+  public void setGymInfo(final GymInfo gymInfo) {
+    this.gymInfo = gymInfo;
   }
 
   @Override
@@ -44,8 +55,7 @@ public final class Gym implements Comparable<Gym> {
       final Gym other = (Gym) obj;
 
       return Objects.equals(gymId, other.gymId) &&
-          Objects.equals(gymName, other.gymName) &&
-          Objects.equals(gymInfo, other.gymInfo);
+          Objects.equals(gymName, other.gymName);
     }
 
     return false;
@@ -53,7 +63,7 @@ public final class Gym implements Comparable<Gym> {
 
   @Override
   public int hashCode() {
-    return Objects.hash(gymId, gymName, gymInfo);
+    return Objects.hash(gymId, gymName);
   }
 
   @Override

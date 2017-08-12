@@ -10,6 +10,9 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.*;
 import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
+import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.util.*;
 import java.util.function.Function;
@@ -33,8 +36,8 @@ public final class GymScraper {
       this.minLong = minLong;
       this.maxLong = maxLong;
 
-      midLat = minLat.add(maxLat.subtract(minLat).divide(new BigDecimal("2.0")));
-      midLong = minLong.add(maxLong.subtract(minLong).divide(new BigDecimal("2.0")));
+      midLat = minLat.add(maxLat.subtract(minLat).divide(new BigDecimal("2.0"), 8, RoundingMode.HALF_EVEN));
+      midLong = minLong.add(maxLong.subtract(minLong).divide(new BigDecimal("2.0"), 8, BigDecimal.ROUND_HALF_EVEN));
     }
 
     private List<CoordinateRange> subDivide() {
@@ -59,7 +62,8 @@ public final class GymScraper {
 
     @Override
     public String toString() {
-      return "<" + minLat + "," + minLong + " - " + maxLat + "," + maxLong + ">";
+      return "<" + formatter.format(minLat) + "," + formatter.format(minLong) + " - " +
+          formatter.format(maxLat) + "," + formatter.format(maxLong) + ">";
     }
   }
 
@@ -125,6 +129,8 @@ public final class GymScraper {
         "Usage: GymScraper {-sessionId=<session id to use for requests>\n" +
             "                  {-minLat=<minimum latitude to scrape>} {-maxLat=<maximum latitude to scrape>}\n" +
             "                  {-minLong=<minimum longitude to scrape>} {-maxLong=<maximum longitude to scrape>}\n" +
+            "                  [-existingGyms=<file name of existing gyms output to amend and add to>\n" +
+            "                  [-removeMissingGyms=<true|false, defaults to false if omitted>\n" +
             "                  [-divideThreshold=<number of sites to use as a threshold to subdivide the query,\n" +
             "                   defaults to 200 if omitted>]");
   }
@@ -137,6 +143,10 @@ public final class GymScraper {
     BigDecimal maxLong = null;
 
     int divideThreshold = 200;
+
+    boolean _incrementalUpdate = false;
+    String existingGymsFilename = null;
+    boolean _removeMissingGyms = false;
 
     for (final String arg : args) {
       if (!arg.startsWith("-")) {
@@ -152,27 +162,36 @@ public final class GymScraper {
 
       switch (splitArg[0].toLowerCase()) {
         case "minlat": {
-          minLat = new BigDecimal(value);
+          minLat = new BigDecimal(value, MathContext.DECIMAL32);
           break;
         }
         case "maxlat": {
-          maxLat = new BigDecimal(value);
+          maxLat = new BigDecimal(value, MathContext.DECIMAL32);
           break;
         }
         case "minlong": {
-          minLong = new BigDecimal(value);
+          minLong = new BigDecimal(value, MathContext.DECIMAL32);
           break;
         }
         case "maxlong": {
-          maxLong = new BigDecimal(value);
+          maxLong = new BigDecimal(value, MathContext.DECIMAL32);
           break;
         }
         case "dividethreshold": {
           divideThreshold = Integer.parseInt(value);
           break;
         }
+        case "existinggyms": {
+          existingGymsFilename = value;
+          _incrementalUpdate = true;
+          break;
+        }
+        case "removemissinggyms": {
+          _removeMissingGyms = Boolean.parseBoolean(value);
+        }
         case "sessionid": {
           SESSION_ID = value;
+          break;
         }
       }
     }
@@ -182,12 +201,38 @@ public final class GymScraper {
       System.exit(-1);
     }
 
+    final Set<Gym> existingGyms;
+    if (existingGymsFilename != null) {
+      final File existingGymsFile = Paths.get(existingGymsFilename).toFile();
+
+      if (!existingGymsFile.exists()) {
+        System.err.println("File '" + existingGymsFilename + "' does not exist!");
+        System.exit(-1);
+      }
+      try (final BufferedReader input = new BufferedReader(new FileReader(existingGymsFile))) {
+        existingGyms = new TreeSet<>(Arrays.asList(new Gson().fromJson(input, Gym[].class)));
+      }
+      logger.info("Loaded " + existingGyms.size() + " existing gyms.");
+    } else {
+      existingGyms = new TreeSet<>();
+    }
+
+    final boolean incrementalUpdate = _incrementalUpdate;
+    final boolean removeMissingGyms = _removeMissingGyms;
+
+    logger.info("Update mode is " + (incrementalUpdate
+        ? "incremental"
+        : "full") + ".");
+
+    if (removeMissingGyms) {
+      logger.info("Removal of missing gyms from existing gyms in scraped area enabled.");
+    }
+
     final Stack<CoordinateRange> coordinateRanges = new Stack<>();
     coordinateRanges.push(new CoordinateRange(minLat, maxLat, minLong, maxLong));
 
     // maps from actual gym object to command to get detailed gym info, ordered by gym id's
-    final Map<Gym, String> gymDetailsMap = new TreeMap<>();
-    final Set<Gym> gyms = gymDetailsMap.keySet();
+    final Map<Gym, String> newGymDetailsMap = new TreeMap<>();
 
     final JsonParser parser = new JsonParser();
 
@@ -225,7 +270,7 @@ public final class GymScraper {
 
               logger.info("  " + entries.size() + " site(s) found...");
 
-              gymDetailsMap.putAll(entries.stream()
+              newGymDetailsMap.putAll(entries.stream()
                   .map(entry -> {
                     final String siteId = entry.getKey();
                     final JsonElement site = entry.getValue();
@@ -266,15 +311,19 @@ public final class GymScraper {
       Thread.sleep(30_000L);
     }
 
-    logger.info("Writing out initial gym information.");
-    try (final BufferedWriter writer = new BufferedWriter(new FileWriter("gyms-nolocation.json"))) {
-      writer.write(new Gson().toJson(gyms));
-    }
-
     final Stack<Map.Entry<Gym, String>> gymCommands = new Stack<>();
-    gymDetailsMap.entrySet().forEach(gymCommands::push);
 
-    final Set<Gym> gymsWithInfo = new TreeSet<>();
+    final Set<Gym> allNewGyms = newGymDetailsMap.keySet();
+    newGymDetailsMap.entrySet().stream()
+        .filter(entry -> {
+          final Gym gym = entry.getKey();
+
+          return !incrementalUpdate || (!existingGyms.contains(gym));
+        })
+        .forEach(gymCommands::push);
+
+    logger.info(gymCommands.size() + " new gyms found.");
+    final Set<Gym> newGyms = new TreeSet<>();
 
     // For each gym, now get its detailed information so we can get its location
     while (!gymCommands.isEmpty()) {
@@ -304,7 +353,8 @@ public final class GymScraper {
             final String latitude = object.get("markerlat").getAsString();
             final String longitude = object.get("markerlng").getAsString();
 
-            gymsWithInfo.add(gym.withGymInfo(new GymInfo(description, latitude, longitude)));
+            gym.setGymInfo(new GymInfo(description, latitude, longitude));
+            newGyms.add(gym);
           }
         } else {
           logger.warn("Empty / invalid result in getting location information for gym...");
@@ -314,9 +364,24 @@ public final class GymScraper {
       Thread.sleep(1_000L);
     }
 
+    final Set<Gym> outputGyms;
+
+    if (incrementalUpdate) {
+      if (removeMissingGyms) {
+        final Set<Gym> missingGyms = new HashSet<>(existingGyms);
+        missingGyms.removeAll(allNewGyms);
+
+        existingGyms.removeAll(missingGyms);
+      }
+      existingGyms.addAll(newGyms);
+      outputGyms = existingGyms;
+    } else {
+      outputGyms = newGyms;
+    }
+
     logger.info("Writing out gym information with locations and descriptions.");
     try (final BufferedWriter writer = new BufferedWriter(new FileWriter("gyms.json"))) {
-      writer.write(new Gson().toJson(gymsWithInfo));
+      writer.write(new Gson().toJson(outputGyms));
     }
   }
 }
