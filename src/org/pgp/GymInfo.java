@@ -1,6 +1,7 @@
 package org.pgp;
 
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.Objects;
 
 public final class GymInfo {
@@ -8,8 +9,10 @@ public final class GymInfo {
   private BigDecimal latitude;
   private BigDecimal longitude;
 
+  private Collection<Geocode> addressComponents;
+
   public GymInfo() {
- }
+  }
 
   public GymInfo(final String gymDescription, final String latitude, final String longitude) {
     this.gymDescription = gymDescription;
@@ -41,6 +44,14 @@ public final class GymInfo {
     this.longitude = longitude;
   }
 
+  public Collection<Geocode> getAddressComponents() {
+    return addressComponents;
+  }
+
+  public void setAddressComponents(final Collection<Geocode> addressComponents) {
+    this.addressComponents = addressComponents;
+  }
+
   @Override
   public boolean equals(final Object obj) {
     if (this == obj) {
@@ -52,7 +63,8 @@ public final class GymInfo {
 
       return Objects.equals(gymDescription, other.gymDescription) &&
           Objects.equals(latitude, other.latitude) &&
-          Objects.equals(longitude, other.longitude);
+          Objects.equals(longitude, other.longitude) &&
+          Objects.equals(addressComponents, other.addressComponents);
     }
 
     return false;
@@ -60,6 +72,6 @@ public final class GymInfo {
 
   @Override
   public int hashCode() {
-    return Objects.hash(gymDescription, latitude, longitude);
+    return Objects.hash(gymDescription, latitude, longitude, addressComponents);
   }
 }

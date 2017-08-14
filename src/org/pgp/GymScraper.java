@@ -1,9 +1,11 @@
 package org.pgp;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.gson.*;
+import com.google.maps.GeoApiContext;
+import com.google.maps.GeocodingApi;
+import com.google.maps.errors.ApiException;
+import com.google.maps.model.GeocodingResult;
+import com.google.maps.model.LatLng;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -129,7 +131,8 @@ public final class GymScraper {
         "Usage: GymScraper {-sessionId=<session id to use for requests>\n" +
             "                  {-minLat=<minimum latitude to scrape>} {-maxLat=<maximum latitude to scrape>}\n" +
             "                  {-minLong=<minimum longitude to scrape>} {-maxLong=<maximum longitude to scrape>}\n" +
-            "                  [-existingGyms=<file name of existing gyms output to amend and add to>\n" +
+            "                  [-googleApiKey=<Google maps API key for reverse geocoding, geocoding not done if omitted>\n" +
+            "                  [-existingGyms=<file name of existing gyms output to amend and add to, optional>\n" +
             "                  [-removeMissingGyms=<true|false, defaults to false if omitted>\n" +
             "                  [-divideThreshold=<number of sites to use as a threshold to subdivide the query,\n" +
             "                   defaults to 200 if omitted>]");
@@ -147,6 +150,8 @@ public final class GymScraper {
     boolean _incrementalUpdate = false;
     String existingGymsFilename = null;
     boolean _removeMissingGyms = false;
+
+    String googleApiKey = null;
 
     for (final String arg : args) {
       if (!arg.startsWith("-")) {
@@ -188,9 +193,14 @@ public final class GymScraper {
         }
         case "removemissinggyms": {
           _removeMissingGyms = Boolean.parseBoolean(value);
+          break;
         }
         case "sessionid": {
           SESSION_ID = value;
+          break;
+        }
+        case "googleapikey": {
+          googleApiKey = value;
           break;
         }
       }
@@ -364,6 +374,32 @@ public final class GymScraper {
       Thread.sleep(1_000L);
     }
 
+    if (googleApiKey != null) {
+      logger.info("Reverse geocoding gyms...");
+      // Do reverse geocode lookup on new gyms
+      final GeoApiContext context = new GeoApiContext.Builder()
+          .apiKey(googleApiKey)
+          .build();
+
+      newGyms.forEach(gym -> {
+            logger.info("Getting geocode information for gym '" + gym.getGymName() + "'.");
+            try {
+              final GymInfo gymInfo = gym.getGymInfo();
+              final GeocodingResult[] results = GeocodingApi.newRequest(context)
+                  .latlng(new LatLng(gymInfo.getLatitude().doubleValue(), gymInfo.getLongitude().doubleValue()))
+                  .await();
+              gymInfo.setAddressComponents(Arrays.stream(results)
+                  .map(result -> new Geocode(result.formattedAddress, result.addressComponents))
+                  .distinct()
+                  .collect(Collectors.toList()));
+            } catch (final ApiException
+                | InterruptedException
+                | IOException e) {
+              logger.error("Exception caught", e);
+            }
+          });
+    }
+
     final Set<Gym> outputGyms;
 
     if (incrementalUpdate) {
@@ -381,7 +417,7 @@ public final class GymScraper {
 
     logger.info("Writing out gym information with locations and descriptions.");
     try (final BufferedWriter writer = new BufferedWriter(new FileWriter("gyms.json"))) {
-      writer.write(new Gson().toJson(outputGyms));
+      writer.write(new GsonBuilder().setPrettyPrinting().create().toJson(outputGyms));
     }
   }
 }
