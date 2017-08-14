@@ -11,4 +11,4 @@ Basic sample usage:
 
 The session id is a unique key to send to pokemongomap.info.  To generate a valid one for use, simply visit pokemongomap.info and get some sites / gyms with network monitoring enabled in your web browser.  The key is the value from the PHPSESSID cookie (it should look like a random string of numbers and letters 26 characters or so in length).
 
-The Google API key is a valid Google API key (one can be generated for free) for use with Google Maps's client services.  If omitted, reverse geocoding for address lookup, etc., is not performed or therefore in the output json file.
+The Google API key is a Google Maps key (one can be generated for free) for use with their Maps client services.  If omitted, reverse geocoding for address lookup, etc., is not performed or therefore in the output json file.
