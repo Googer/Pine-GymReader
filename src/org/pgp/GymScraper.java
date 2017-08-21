@@ -134,6 +134,7 @@ public final class GymScraper {
             "                  [-googleApiKey=<Google maps API key for reverse geocoding, geocoding not done if omitted>\n" +
             "                  [-existingGyms=<file name of existing gyms output to amend and add to, optional>\n" +
             "                  [-removeMissingGyms=<true|false, defaults to false if omitted>\n" +
+            "                  [-geocodeOnly=<true|false, defaults to false if omitted>\n" +
             "                  [-divideThreshold=<number of sites to use as a threshold to subdivide the query,\n" +
             "                   defaults to 200 if omitted>]");
   }
@@ -150,6 +151,8 @@ public final class GymScraper {
     boolean _incrementalUpdate = false;
     String existingGymsFilename = null;
     boolean _removeMissingGyms = false;
+
+    boolean geocodeOnly = false;
 
     String googleApiKey = null;
 
@@ -203,15 +206,22 @@ public final class GymScraper {
           googleApiKey = value;
           break;
         }
+        case "geocodeonly": {
+          geocodeOnly = Boolean.parseBoolean(value);
+          break;
+        }
       }
     }
 
-    if (minLat == null || maxLat == null || minLong == null || maxLong == null) {
+    if ((minLat == null || maxLat == null || minLong == null || maxLong == null) && !geocodeOnly) {
       usage();
       System.exit(-1);
     }
 
     final Set<Gym> existingGyms;
+    final Set<Gym> newGyms;
+    final Set<Gym> allNewGyms;
+
     if (existingGymsFilename != null) {
       final File existingGymsFile = Paths.get(existingGymsFilename).toFile();
 
@@ -238,166 +248,171 @@ public final class GymScraper {
       logger.info("Removal of missing gyms from existing gyms in scraped area enabled.");
     }
 
-    final Stack<CoordinateRange> coordinateRanges = new Stack<>();
-    coordinateRanges.push(new CoordinateRange(minLat, maxLat, minLong, maxLong));
+    if (!geocodeOnly) {
+      final Stack<CoordinateRange> coordinateRanges = new Stack<>();
+      coordinateRanges.push(new CoordinateRange(minLat, maxLat, minLong, maxLong));
 
-    // maps from actual gym object to command to get detailed gym info, ordered by gym id's
-    final Map<Gym, String> newGymDetailsMap = new TreeMap<>();
+      // maps from actual gym object to command to get detailed gym info, ordered by gym id's
+      final Map<Gym, String> newGymDetailsMap = new TreeMap<>();
 
-    final JsonParser parser = new JsonParser();
+      final JsonParser parser = new JsonParser();
 
-    while (!coordinateRanges.isEmpty()) {
-      final CoordinateRange coordinateRange = coordinateRanges.pop();
-      final String command = coordinateRange.generateCommand();
+      while (!coordinateRanges.isEmpty()) {
+        final CoordinateRange coordinateRange = coordinateRanges.pop();
+        final String command = coordinateRange.generateCommand();
 
-      logger.debug("Command is: '" + command + "'.");
-      logger.info("Processing region " + coordinateRange + ":");
+        logger.debug("Command is: '" + command + "'.");
+        logger.info("Processing region " + coordinateRange + ":");
 
-      final Process process = Runtime.getRuntime().exec(command);
+        final Process process = Runtime.getRuntime().exec(command);
 
-      try (final BufferedReader input = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-        final String result = IOUtils.toString(input);
-        final JsonElement element = parser.parse(result);
-        if (element.isJsonObject()) {
-          // we got a non-empty response of some sort, so either a spam message or an actual gym list
-          final JsonObject object = element.getAsJsonObject();
+        try (final BufferedReader input = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+          final String result = IOUtils.toString(input);
+          final JsonElement element = parser.parse(result);
+          if (element.isJsonObject()) {
+            // we got a non-empty response of some sort, so either a spam message or an actual gym list
+            final JsonObject object = element.getAsJsonObject();
 
-          if (object.get("spam") != null) {
-            // pokemongomapinfo is telling us to cool it, so wait and try again...
-            logger.warn("Spam warning detected - sleeping 5 minutes...");
-            coordinateRanges.push(coordinateRange);
-            Thread.sleep(300_000L);
-          } else {
-            final int siteCount = object.keySet().size();
-
-            if (siteCount > divideThreshold) {
-              logger.info("  " + siteCount + " sites found - subdividing...");
-              coordinateRange.subDivide()
-                  .forEach(coordinateRanges::push);
+            if (object.get("spam") != null) {
+              // pokemongomapinfo is telling us to cool it, so wait and try again...
+              logger.warn("Spam warning detected - sleeping 5 minutes...");
+              coordinateRanges.push(coordinateRange);
+              Thread.sleep(300_000L);
             } else {
-              // site id's are the keys in the result set
-              final Set<Map.Entry<String, JsonElement>> entries = object.entrySet();
+              final int siteCount = object.keySet().size();
 
-              logger.info("  " + entries.size() + " site(s) found...");
+              if (siteCount > divideThreshold) {
+                logger.info("  " + siteCount + " sites found - subdividing...");
+                coordinateRange.subDivide()
+                    .forEach(coordinateRanges::push);
+              } else {
+                // site id's are the keys in the result set
+                final Set<Map.Entry<String, JsonElement>> entries = object.entrySet();
 
-              newGymDetailsMap.putAll(entries.stream()
-                  .map(entry -> {
-                    final String siteId = entry.getKey();
-                    final JsonElement site = entry.getValue();
+                logger.info("  " + entries.size() + " site(s) found...");
 
-                    if (site.isJsonObject()) {
-                      final long gymId = Long.parseLong(siteId);
-                      final JsonObject siteObject = site.getAsJsonObject();
-                      final String siteName = siteObject.get("rfs21d").getAsString();
+                newGymDetailsMap.putAll(entries.stream()
+                    .map(entry -> {
+                      final String siteId = entry.getKey();
+                      final JsonElement site = entry.getValue();
 
-                      final int siteType = Integer.parseInt(
-                          new String(Base64.getDecoder().decode(siteObject.get("xgxg35").getAsString())));
-                      if (siteType > 1) {
-                        logger.info("    Found gym '" + siteName + "'.");
-                        return new Gym(gymId, siteName);
+                      if (site.isJsonObject()) {
+                        final long gymId = Long.parseLong(siteId);
+                        final JsonObject siteObject = site.getAsJsonObject();
+                        final String siteName = siteObject.get("rfs21d").getAsString();
+
+                        final int siteType = Integer.parseInt(
+                            new String(Base64.getDecoder().decode(siteObject.get("xgxg35").getAsString())));
+                        if (siteType > 1) {
+                          logger.info("    Found gym '" + siteName + "'.");
+                          return new Gym(gymId, siteName);
+                        } else {
+                          logger.debug("    Skipping site '" + siteName + "'.");
+                        }
                       } else {
-                        logger.debug("    Skipping site '" + siteName + "'.");
+                        logger.warn("Returned result is not a valid json object!");
+                        logger.debug("Result is '" + site.getAsString() + "'.");
                       }
-                    } else {
-                      logger.warn("Returned result is not a valid json object!");
-                      logger.debug("Result is '" + site.getAsString() + "'.");
-                    }
-                    return null;
-                  })
-                  .filter(Objects::nonNull)
-                  .collect(Collectors.toMap(
-                      Function.identity(),
-                      GENERATE_DETAIL_COMMAND)));
+                      return null;
+                    })
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toMap(
+                        Function.identity(),
+                        GENERATE_DETAIL_COMMAND)));
+              }
             }
-          }
-        } else if (!element.isJsonNull()) {
-          // empty result set, nothing in this region
-          logger.info("  0 sites found...");
-        } else {
-          logger.warn("  Null / completely empty result...");
-        }
-      }
-
-      Thread.sleep(30_000L);
-    }
-
-    final Stack<Map.Entry<Gym, String>> gymCommands = new Stack<>();
-
-    final Set<Gym> allNewGyms = newGymDetailsMap.keySet();
-    newGymDetailsMap.entrySet().stream()
-        .filter(entry -> {
-          final Gym gym = entry.getKey();
-
-          return !incrementalUpdate || (!existingGyms.contains(gym));
-        })
-        .forEach(gymCommands::push);
-
-    logger.info(gymCommands.size() + " new gyms found.");
-    final Set<Gym> newGyms = new TreeSet<>();
-
-    // For each gym, now get its detailed information so we can get its location
-    while (!gymCommands.isEmpty()) {
-      final Map.Entry<Gym, String> entry = gymCommands.pop();
-
-      final Gym gym = entry.getKey();
-      final String command = entry.getValue();
-
-      logger.debug("Command is: '" + command + "'.");
-      final Process process = Runtime.getRuntime().exec(command);
-
-      try (final BufferedReader input = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-        final String result = IOUtils.toString(input);
-        final JsonElement element = parser.parse(result);
-
-        if (element.isJsonObject()) {
-          final JsonObject object = element.getAsJsonObject();
-
-          if (object.get("spam") != null) {
-            logger.warn("Spam warning detected - sleeping 5 minutes...");
-            gymCommands.push(entry);
-            Thread.sleep(300_000L);
+          } else if (!element.isJsonNull()) {
+            // empty result set, nothing in this region
+            logger.info("  0 sites found...");
           } else {
-            logger.info("Filling in location information for gym '" + gym.getGymName() + "'.");
-
-            final String description = object.get("description").getAsString();
-            final String latitude = object.get("markerlat").getAsString();
-            final String longitude = object.get("markerlng").getAsString();
-
-            gym.setGymInfo(new GymInfo(description, latitude, longitude));
-            newGyms.add(gym);
+            logger.warn("  Null / completely empty result...");
           }
-        } else {
-          logger.warn("Empty / invalid result in getting location information for gym...");
         }
+
+        Thread.sleep(30_000L);
       }
 
-      Thread.sleep(1_000L);
+      final Stack<Map.Entry<Gym, String>> gymCommands = new Stack<>();
+
+      allNewGyms = newGymDetailsMap.keySet();
+      newGymDetailsMap.entrySet().stream()
+          .filter(entry -> {
+            final Gym gym = entry.getKey();
+
+            return !incrementalUpdate || (!existingGyms.contains(gym));
+          })
+          .forEach(gymCommands::push);
+
+      logger.info(gymCommands.size() + " new gyms found.");
+      newGyms = new TreeSet<>();
+
+      // For each gym, now get its detailed information so we can get its location
+      logger.info("Retrieving detailed gym information:");
+      while (!gymCommands.isEmpty()) {
+        final Map.Entry<Gym, String> entry = gymCommands.pop();
+
+        final Gym gym = entry.getKey();
+        final String command = entry.getValue();
+
+        logger.debug("Command is: '" + command + "'.");
+        final Process process = Runtime.getRuntime().exec(command);
+
+        try (final BufferedReader input = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+          final String result = IOUtils.toString(input);
+          final JsonElement element = parser.parse(result);
+
+          if (element.isJsonObject()) {
+            final JsonObject object = element.getAsJsonObject();
+
+            if (object.get("spam") != null) {
+              logger.warn("Spam warning detected - sleeping 5 minutes...");
+              gymCommands.push(entry);
+              Thread.sleep(300_000L);
+            } else {
+              logger.info("  Filling in location information for gym '" + gym.getGymName() + "'.");
+
+              final String description = object.get("description").getAsString();
+              final String latitude = object.get("markerlat").getAsString();
+              final String longitude = object.get("markerlng").getAsString();
+
+              gym.setGymInfo(new GymInfo(description, latitude, longitude));
+              newGyms.add(gym);
+            }
+          } else {
+            logger.warn("Empty / invalid result in getting location information for gym...");
+          }
+        }
+
+        Thread.sleep(1_000L);
+      }
+    } else {
+      newGyms = existingGyms;
+      allNewGyms = existingGyms;
     }
 
     if (googleApiKey != null) {
-      logger.info("Reverse geocoding gyms...");
+      logger.info("Reverse geocoding gyms:");
       // Do reverse geocode lookup on new gyms
       final GeoApiContext context = new GeoApiContext.Builder()
           .apiKey(googleApiKey)
           .build();
 
       newGyms.forEach(gym -> {
-            logger.info("Getting geocode information for gym '" + gym.getGymName() + "'.");
-            try {
-              final GymInfo gymInfo = gym.getGymInfo();
-              final GeocodingResult[] results = GeocodingApi.newRequest(context)
-                  .latlng(new LatLng(gymInfo.getLatitude().doubleValue(), gymInfo.getLongitude().doubleValue()))
-                  .await();
-              gymInfo.setAddressComponents(Arrays.stream(results)
-                  .map(result -> new Geocode(result.formattedAddress, result.addressComponents))
-                  .distinct()
-                  .collect(Collectors.toList()));
-            } catch (final ApiException
-                | InterruptedException
-                | IOException e) {
-              logger.error("Exception caught", e);
-            }
-          });
+        logger.info("  Getting geocode information for gym '" + gym.getGymName() + "'.");
+        try {
+          final GymInfo gymInfo = gym.getGymInfo();
+          final GeocodingResult[] results = GeocodingApi.newRequest(context)
+              .latlng(new LatLng(gymInfo.getLatitude().doubleValue(), gymInfo.getLongitude().doubleValue()))
+              .await();
+          gymInfo.setAddressComponents(Arrays.stream(results)
+              .map(result -> new Geocode(result.formattedAddress, result.addressComponents))
+              .collect(Collectors.toCollection(LinkedHashSet::new)));
+        } catch (final ApiException
+            | InterruptedException
+            | IOException e) {
+          logger.error("Exception caught", e);
+        }
+      });
     }
 
     final Set<Gym> outputGyms;
