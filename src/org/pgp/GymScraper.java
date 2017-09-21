@@ -3,9 +3,10 @@ package org.pgp;
 import com.google.gson.*;
 import com.google.maps.GeoApiContext;
 import com.google.maps.GeocodingApi;
+import com.google.maps.NearbySearchRequest;
 import com.google.maps.errors.ApiException;
-import com.google.maps.model.GeocodingResult;
 import com.google.maps.model.LatLng;
+import com.google.maps.model.PlaceType;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -122,7 +123,8 @@ public final class GymScraper {
   }
 
   private static final Function<Gym, String> GENERATE_DETAIL_COMMAND = gym ->
-      GYM_TEMPLATE.replace("{gymId}", String.valueOf(gym.getGymId()))
+      GYM_TEMPLATE
+          .replace("{gymId}", String.valueOf(gym.getGymId()))
           .replace("{cookie}", COOKIE)
           .replace("{session_id}", getSessionId());
 
@@ -154,7 +156,7 @@ public final class GymScraper {
 
     boolean geocodeOnly = false;
 
-    String googleApiKey = null;
+    String _googleApiKey = null;
 
     for (final String arg : args) {
       if (!arg.startsWith("-")) {
@@ -203,7 +205,7 @@ public final class GymScraper {
           break;
         }
         case "googleapikey": {
-          googleApiKey = value;
+          _googleApiKey = value;
           break;
         }
         case "geocodeonly": {
@@ -239,6 +241,7 @@ public final class GymScraper {
 
     final boolean incrementalUpdate = _incrementalUpdate;
     final boolean removeMissingGyms = _removeMissingGyms;
+    final String googleApiKey = _googleApiKey;
 
     logger.info("Update mode is " + (incrementalUpdate
         ? "incremental"
@@ -248,14 +251,14 @@ public final class GymScraper {
       logger.info("Removal of missing gyms from existing gyms in scraped area enabled.");
     }
 
+    final JsonParser parser = new JsonParser();
+
     if (!geocodeOnly) {
       final Stack<CoordinateRange> coordinateRanges = new Stack<>();
       coordinateRanges.push(new CoordinateRange(minLat, maxLat, minLong, maxLong));
 
       // maps from actual gym object to command to get detailed gym info, ordered by gym id's
       final Map<Gym, String> newGymDetailsMap = new TreeMap<>();
-
-      final JsonParser parser = new JsonParser();
 
       while (!coordinateRanges.isEmpty()) {
         final CoordinateRange coordinateRange = coordinateRanges.pop();
@@ -392,21 +395,39 @@ public final class GymScraper {
 
     if (googleApiKey != null) {
       logger.info("Reverse geocoding gyms:");
-      // Do reverse geocode lookup on new gyms
       final GeoApiContext context = new GeoApiContext.Builder()
           .apiKey(googleApiKey)
           .build();
+
+      final Set<String> placeTypes = Arrays.stream(PlaceType.values())
+          .map(PlaceType::toString)
+          .map(String::toUpperCase)
+          .collect(Collectors.toSet());
 
       newGyms.forEach(gym -> {
         logger.info("  Getting geocode information for gym '" + gym.getGymName() + "'.");
         try {
           final GymInfo gymInfo = gym.getGymInfo();
-          final GeocodingResult[] results = GeocodingApi.newRequest(context)
-              .latlng(new LatLng(gymInfo.getLatitude().doubleValue(), gymInfo.getLongitude().doubleValue()))
-              .await();
-          gymInfo.setAddressComponents(Arrays.stream(results)
+          final LatLng location = new LatLng(gymInfo.getLatitude().doubleValue(), gymInfo.getLongitude().doubleValue());
+
+          gymInfo.setAddressComponents(Arrays.stream(
+              GeocodingApi.newRequest(context)
+                  .latlng(location)
+                  .await())
               .map(result -> new Geocode(result.formattedAddress, result.addressComponents))
               .collect(Collectors.toCollection(LinkedHashSet::new)));
+
+          gymInfo.setPlaces(Arrays.stream(
+              new NearbySearchRequest(context)
+                  .location(location)
+                  .radius(30)
+                  .await()
+                  .results)
+              .filter(place -> Arrays.stream(place.types)
+                  .map(String::toUpperCase)
+                  .anyMatch(placeTypes::contains))
+              .map(place -> place.name)
+              .collect(Collectors.toCollection(TreeSet::new)));
         } catch (final ApiException
             | InterruptedException
             | IOException e) {
