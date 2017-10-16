@@ -406,6 +406,19 @@ public final class GymScraper {
 
       newGyms.forEach(gym -> {
         logger.info("  Getting geocode information for gym '" + gym.getGymName() + "'.");
+
+        final int nearestGymDistance = Math.toIntExact(Math.round(
+            newGyms.stream()
+                .filter(otherGym -> otherGym.getGymId() != gym.getGymId())
+                .mapToDouble(otherGym ->
+                    Haversine.distance(
+                        gym.getGymInfo().getLatitude().doubleValue(),
+                        gym.getGymInfo().getLongitude().doubleValue(),
+                        otherGym.getGymInfo().getLatitude().doubleValue(),
+                        otherGym.getGymInfo().getLongitude().doubleValue())
+                        * 1_000d)
+                .min()
+                .orElse(30)));
         try {
           final GymInfo gymInfo = gym.getGymInfo();
           final LatLng location = new LatLng(gymInfo.getLatitude().doubleValue(), gymInfo.getLongitude().doubleValue());
@@ -420,7 +433,7 @@ public final class GymScraper {
           gymInfo.setPlaces(Arrays.stream(
               new NearbySearchRequest(context)
                   .location(location)
-                  .radius(30)
+                  .radius(nearestGymDistance / 2)
                   .await()
                   .results)
               .filter(place -> Arrays.stream(place.types)
