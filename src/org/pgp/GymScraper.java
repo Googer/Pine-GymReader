@@ -43,6 +43,10 @@ public final class GymScraper {
       midLong = minLong.add(maxLong.subtract(minLong).divide(new BigDecimal("2.0"), 8, BigDecimal.ROUND_HALF_EVEN));
     }
 
+    private double area() {
+      return Math.abs(maxLat.subtract(minLat).doubleValue() * maxLong.subtract(minLong).doubleValue());
+    }
+
     private List<CoordinateRange> subDivide() {
       return Arrays.asList(
           new CoordinateRange(minLat, midLat, minLong, midLong),
@@ -58,6 +62,7 @@ public final class GymScraper {
           .replace("{minLong}", formatter.format(minLong))
           .replace("{maxLong}", formatter.format(maxLong))
           .replace("{cookie}", COOKIE)
+          .replace("{user_id}", USER_ID)
           .replace("{session_id}", SESSION_ID)
           .replace("{curLatCenter}", formatter.format(midLat))
           .replace("{curLongCenter}", formatter.format(midLong));
@@ -79,29 +84,32 @@ public final class GymScraper {
     formatter.setGroupingUsed(false);
   }
 
-  private static String SESSION_ID = "fd1lms5pd02cka2fkung48c123";
+  private static String USER_ID = "d9c8997c8b65f54b4f0f3e938a1b7bcc31509297067";
+  private static String SESSION_ID = "74be3fa4e449sa7ulfjl4g3rh7";
 
   private final static String COOKIE =
-      "mapfilters=0[##split##]1[##split##]1[##split##]0[##split##]0[##split##]0[##split##]0[##split##]0; " +
+      "updatetoken=0; " +
+          "__cfduid={user_id};" +
           "PHPSESSID={session_id}; " +
-          "announcementnews4=1; " +
+          "announcementnews4=1;announcementnews6=1;announcementnews8=1; " +
+          "mapfilters=0^[^#^#split^#^#^]1^[^#^#split^#^#^]1^[^#^#split^#^#^]0^[^#^#split^#^#^]0^[^#^#split^#^#^]0^[^#^#split^#^#^]0^[^#^#split^#^#^]0^[^#^#split^#^#^]1^[^#^#split^#^#^]1^[^#^#split^#^#^]1^[^#^#split^#^#^]0; " +
           "latlngzoom=15^[^#^#split^#^#^]{curLatCenter}^[^#^#split^#^#^]{curLongCenter}";
 
   private final static String GYMS_TEMPLATE = "curl " +
-      "\"https://www.pokemongomap.info/includes/uy22ewsd1.php\" " +
+      "\"https://www.pokemongomap.info/includes/it43nmsq5.php\" " +
       "-k " +
-      "-H \"Origin: https://www.pokemongomap.info\" " +
       "-H \"Cookie: {cookie}\" " +
-      "-H \"Accept-Encoding: gzip, deflate, br\" " +
-      "-H \"Accept-Language: en-US,en;q=0.8\" " +
-      "-H \"User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36\" " +
-      "-H \"Content-Type: application/x-www-form-urlencoded; charset=UTF-8\" " +
-      "-H \"Accept: */*\" " +
-      "-H \"Referer: https://www.pokemongomap.info/\" " +
-      "-H \"X-Requested-With: XMLHttpRequest\" " +
-      "-H \"DNT: 1\" " +
-      "--data \"fromlat={minLat}^&tolat={maxLat}^&fromlng={minLong}^&tolng={maxLong}^&fpoke=0^&fgym=1^&farm=0^&nests=0^&raids=0\" " +
-      "--compressed";
+      "-H \"dnt: 1\" " +
+//      "-H \"accept-encoding: gzip, deflate, br\" " +
+      "-H \"x-requested-with: XMLHttpRequest\" " +
+      "-H \"accept-language: en-US,en;q=0.8\" " +
+      "-H \"user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36\" " +
+      "-H \"content-type: application/x-www-form-urlencoded; charset=UTF-8\" " +
+      "-H \"accept: */*\" " +
+      "-H \"referer: https://www.pokemongomap.info/\" " +
+      "-H \"authority: www.pokemongomap.info\" " +
+      "--data \"fromlat={minLat}^&tolat={maxLat}^&fromlng={minLong}^&tolng={maxLong}^&fpoke=0^&fgym=1^&farm=0^&nests=0^&raids=0^&sponsor=0\"";// " +
+//      "--compressed";
 
   private final static String GYM_TEMPLATE = "curl " +
       "\"https://www.pokemongomap.info/includes/locdata.php\" " +
@@ -115,8 +123,12 @@ public final class GymScraper {
       "-H \"Referer: https://www.pokemongomap.info/\" " +
       "-H \"X-Requested-With: XMLHttpRequest\" " +
       "-H \"DNT: 1\" " +
-      "--data \"mid={gymId}\" " +
-      "--compressed";
+      "--data \"mid={gymId}\"";// " +
+//      "--compressed";
+
+  private static String getUserId() {
+    return USER_ID;
+  }
 
   private static String getSessionId() {
     return SESSION_ID;
@@ -126,11 +138,13 @@ public final class GymScraper {
       GYM_TEMPLATE
           .replace("{gymId}", String.valueOf(gym.getGymId()))
           .replace("{cookie}", COOKIE)
+          .replace("{user_id}", getUserId())
           .replace("{session_id}", getSessionId());
 
   private static void usage() {
     System.err.println(
-        "Usage: GymScraper {-sessionId=<session id to use for requests>\n" +
+        "Usage: GymScraper {-userId=<user id to use for requests>}\n" +
+            "                  {-sessionId=<session id to use for requests>}\n" +
             "                  {-minLat=<minimum latitude to scrape>} {-maxLat=<maximum latitude to scrape>}\n" +
             "                  {-minLong=<minimum longitude to scrape>} {-maxLong=<maximum longitude to scrape>}\n" +
             "                  [-googleApiKey=<Google maps API key for reverse geocoding, geocoding not done if omitted>\n" +
@@ -200,6 +214,10 @@ public final class GymScraper {
           _removeMissingGyms = Boolean.parseBoolean(value);
           break;
         }
+        case "userid": {
+          USER_ID = value;
+          break;
+        }
         case "sessionid": {
           SESSION_ID = value;
           break;
@@ -255,6 +273,7 @@ public final class GymScraper {
 
     if (!geocodeOnly) {
       final Stack<CoordinateRange> coordinateRanges = new Stack<>();
+
       coordinateRanges.push(new CoordinateRange(minLat, maxLat, minLong, maxLong));
 
       // maps from actual gym object to command to get detailed gym info, ordered by gym id's
@@ -262,74 +281,87 @@ public final class GymScraper {
 
       while (!coordinateRanges.isEmpty()) {
         final CoordinateRange coordinateRange = coordinateRanges.pop();
+
+        if (coordinateRange.area() > 0.25d) {
+          logger.info("Subdividing large area...");
+          coordinateRange.subDivide()
+              .forEach(coordinateRanges::push);
+          continue;
+        }
+
         final String command = coordinateRange.generateCommand();
 
         logger.debug("Command is: '" + command + "'.");
         logger.info("Processing region " + coordinateRange + ":");
 
+
         final Process process = Runtime.getRuntime().exec(command);
+        try {
+          try (final BufferedReader input = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+            final String result = IOUtils.toString(input);
+            final JsonElement element = parser.parse(result);
+            if (element.isJsonObject()) {
+              // we got a non-empty response of some sort, so either a spam message or an actual gym list
+              final JsonObject object = element.getAsJsonObject();
 
-        try (final BufferedReader input = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-          final String result = IOUtils.toString(input);
-          final JsonElement element = parser.parse(result);
-          if (element.isJsonObject()) {
-            // we got a non-empty response of some sort, so either a spam message or an actual gym list
-            final JsonObject object = element.getAsJsonObject();
-
-            if (object.get("spam") != null) {
-              // pokemongomapinfo is telling us to cool it, so wait and try again...
-              logger.warn("Spam warning detected - sleeping 5 minutes...");
-              coordinateRanges.push(coordinateRange);
-              Thread.sleep(300_000L);
-            } else {
-              final int siteCount = object.keySet().size();
-
-              if (siteCount > divideThreshold) {
-                logger.info("  " + siteCount + " sites found - subdividing...");
-                coordinateRange.subDivide()
-                    .forEach(coordinateRanges::push);
+              if (object.get("spam") != null) {
+                // pokemongomapinfo is telling us to cool it, so wait and try again...
+                logger.warn("Spam warning detected - sleeping 5 minutes...");
+                coordinateRanges.push(coordinateRange);
+                Thread.sleep(300_000L);
               } else {
-                // site id's are the keys in the result set
-                final Set<Map.Entry<String, JsonElement>> entries = object.entrySet();
+                final int siteCount = object.keySet().size();
 
-                logger.info("  " + entries.size() + " site(s) found...");
+                if (siteCount > divideThreshold) {
+                  logger.info("  " + siteCount + " sites found - subdividing...");
+                  coordinateRange.subDivide()
+                      .forEach(coordinateRanges::push);
+                } else {
+                  // site id's are the keys in the result set
+                  final Set<Map.Entry<String, JsonElement>> entries = object.entrySet();
 
-                newGymDetailsMap.putAll(entries.stream()
-                    .map(entry -> {
-                      final String siteId = entry.getKey();
-                      final JsonElement site = entry.getValue();
+                  logger.info("  " + entries.size() + " site(s) found...");
 
-                      if (site.isJsonObject()) {
-                        final long gymId = Long.parseLong(siteId);
-                        final JsonObject siteObject = site.getAsJsonObject();
-                        final String siteName = siteObject.get("rfs21d").getAsString();
+                  newGymDetailsMap.putAll(entries.stream()
+                      .map(entry -> {
+                        final String siteId = entry.getKey();
+                        final JsonElement site = entry.getValue();
 
-                        final int siteType = Integer.parseInt(
-                            new String(Base64.getDecoder().decode(siteObject.get("xgxg35").getAsString())));
-                        if (siteType > 1) {
-                          logger.info("    Found gym '" + siteName + "'.");
-                          return new Gym(gymId, siteName);
+                        if (site.isJsonObject()) {
+                          final long gymId = Long.parseLong(siteId);
+                          final JsonObject siteObject = site.getAsJsonObject();
+                          final String siteName = siteObject.get("rfs21d").getAsString();
+
+                          final int siteType = Integer.parseInt(
+                              new String(Base64.getDecoder().decode(siteObject.get("xgxg35").getAsString())));
+                          if (siteType > 1) {
+                            logger.info("    Found gym '" + siteName + "'.");
+                            return new Gym(gymId, siteName);
+                          } else {
+                            logger.debug("    Skipping site '" + siteName + "'.");
+                          }
                         } else {
-                          logger.debug("    Skipping site '" + siteName + "'.");
+                          logger.warn("Returned result is not a valid json object!");
+                          logger.debug("Result is '" + site.getAsString() + "'.");
                         }
-                      } else {
-                        logger.warn("Returned result is not a valid json object!");
-                        logger.debug("Result is '" + site.getAsString() + "'.");
-                      }
-                      return null;
-                    })
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toMap(
-                        Function.identity(),
-                        GENERATE_DETAIL_COMMAND)));
+                        return null;
+                      })
+                      .filter(Objects::nonNull)
+                      .collect(Collectors.toMap(
+                          Function.identity(),
+                          GENERATE_DETAIL_COMMAND)));
+                }
               }
+            } else if (!element.isJsonNull()) {
+              // empty result set, nothing in this region
+              logger.info("  0 sites found...");
+            } else {
+              logger.warn("  Null / completely empty result...");
+              coordinateRanges.push(coordinateRange);
             }
-          } else if (!element.isJsonNull()) {
-            // empty result set, nothing in this region
-            logger.info("  0 sites found...");
-          } else {
-            logger.warn("  Null / completely empty result...");
           }
+        } finally {
+          process.destroy();
         }
 
         Thread.sleep(30_000L);
