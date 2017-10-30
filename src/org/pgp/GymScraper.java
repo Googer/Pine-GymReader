@@ -100,7 +100,7 @@ public final class GymScraper {
       "-k " +
       "-H \"Cookie: {cookie}\" " +
       "-H \"dnt: 1\" " +
-//      "-H \"accept-encoding: gzip, deflate, br\" " +
+      "-H \"accept-encoding: gzip, deflate, br\" " +
       "-H \"x-requested-with: XMLHttpRequest\" " +
       "-H \"accept-language: en-US,en;q=0.8\" " +
       "-H \"user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36\" " +
@@ -108,8 +108,8 @@ public final class GymScraper {
       "-H \"accept: */*\" " +
       "-H \"referer: https://www.pokemongomap.info/\" " +
       "-H \"authority: www.pokemongomap.info\" " +
-      "--data \"fromlat={minLat}^&tolat={maxLat}^&fromlng={minLong}^&tolng={maxLong}^&fpoke=0^&fgym=1^&farm=0^&nests=0^&raids=0^&sponsor=0\"";// " +
-//      "--compressed";
+      "--data \"fromlat={minLat}^&tolat={maxLat}^&fromlng={minLong}^&tolng={maxLong}^&fpoke=0^&fgym=1^&farm=0^&nests=0^&raids=0^&sponsor=0\" " +
+      "--compressed";
 
   private final static String GYM_TEMPLATE = "curl " +
       "\"https://www.pokemongomap.info/includes/locdata.php\" " +
@@ -123,8 +123,8 @@ public final class GymScraper {
       "-H \"Referer: https://www.pokemongomap.info/\" " +
       "-H \"X-Requested-With: XMLHttpRequest\" " +
       "-H \"DNT: 1\" " +
-      "--data \"mid={gymId}\"";// " +
-//      "--compressed";
+      "--data \"mid={gymId}\" " +
+      "--compressed";
 
   private static String getUserId() {
     return USER_ID;
@@ -282,7 +282,7 @@ public final class GymScraper {
       while (!coordinateRanges.isEmpty()) {
         final CoordinateRange coordinateRange = coordinateRanges.pop();
 
-        if (coordinateRange.area() > 0.25d) {
+        if (coordinateRange.area() > 0.05d) {
           logger.info("Subdividing large area...");
           coordinateRange.subDivide()
               .forEach(coordinateRanges::push);
@@ -293,7 +293,6 @@ public final class GymScraper {
 
         logger.debug("Command is: '" + command + "'.");
         logger.info("Processing region " + coordinateRange + ":");
-
 
         final Process process = Runtime.getRuntime().exec(command);
         try {
@@ -364,7 +363,7 @@ public final class GymScraper {
           process.destroy();
         }
 
-        Thread.sleep(30_000L);
+        Thread.sleep(5_000L);
       }
 
       final Stack<Map.Entry<Gym, String>> gymCommands = new Stack<>();
