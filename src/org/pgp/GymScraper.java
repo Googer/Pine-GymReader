@@ -92,8 +92,8 @@ public final class GymScraper {
           "__cfduid={user_id};" +
           "PHPSESSID={session_id}; " +
           "announcementnews4=1;announcementnews6=1;announcementnews8=1; " +
-          "mapfilters=0^[^#^#split^#^#^]1^[^#^#split^#^#^]1^[^#^#split^#^#^]0^[^#^#split^#^#^]0^[^#^#split^#^#^]0^[^#^#split^#^#^]0^[^#^#split^#^#^]0^[^#^#split^#^#^]1^[^#^#split^#^#^]1^[^#^#split^#^#^]1^[^#^#split^#^#^]0; " +
-          "latlngzoom=15^[^#^#split^#^#^]{curLatCenter}^[^#^#split^#^#^]{curLongCenter}";
+          "mapfilters=0[##split##]1[##split##]1[##split##]0[##split##]0[##split##]0[##split##]0[##split##]0[##split##]1[##split##]1[##split##]1[##split##]0; " +
+          "latlngzoom=15[##split##]{curLatCenter}[##split##]{curLongCenter}";
 
   private final static String GYMS_TEMPLATE = "curl " +
       "\"https://www.pokemongomap.info/includes/it43nmsq5.php\" " +
@@ -108,7 +108,7 @@ public final class GymScraper {
       "-H \"accept: */*\" " +
       "-H \"referer: https://www.pokemongomap.info/\" " +
       "-H \"authority: www.pokemongomap.info\" " +
-      "--data \"fromlat={minLat}^&tolat={maxLat}^&fromlng={minLong}^&tolng={maxLong}^&fpoke=0^&fgym=1^&farm=0^&nests=0^&raids=0^&sponsor=0\" " +
+      "--data \"fromlat={minLat}&tolat={maxLat}&fromlng={minLong}&tolng={maxLong}&fpoke=0&fgym=1&farm=0&nests=0&raids=0&sponsor=0\" " +
       "--compressed";
 
   private final static String GYM_TEMPLATE = "curl " +
