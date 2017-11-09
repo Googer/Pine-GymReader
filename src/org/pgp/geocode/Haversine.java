@@ -1,7 +1,7 @@
-package org.pgp;
+package org.pgp.geocode;
 
-public class Haversine {
-  private static final int EARTH_RADIUS = 6371; // Approx Earth radius in KM
+public final class Haversine {
+  private static final int EARTH_RADIUS = 6_371; // Approx Earth radius in KM
 
   public static double distance(double startLat, final double startLong,
                                 double endLat, final double endLong) {

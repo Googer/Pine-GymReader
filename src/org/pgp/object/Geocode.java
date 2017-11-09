@@ -1,4 +1,4 @@
-package org.pgp;
+package org.pgp.object;
 
 import com.google.maps.model.AddressComponent;
 

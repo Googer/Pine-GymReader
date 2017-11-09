@@ -1,4 +1,4 @@
-package org.pgp;
+package org.pgp.object;
 
 import java.math.BigDecimal;
 import java.util.Collection;

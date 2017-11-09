@@ -1,4 +1,4 @@
-package org.pgp;
+package org.pgp.object;
 
 import java.util.Objects;
 
