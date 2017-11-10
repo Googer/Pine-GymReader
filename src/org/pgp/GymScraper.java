@@ -86,6 +86,7 @@ public final class GymScraper {
         }
         case "scraper": {
           _scraperConfiguration = value;
+          break;
         }
         case "existinggyms": {
           existingGymsFilename = value;

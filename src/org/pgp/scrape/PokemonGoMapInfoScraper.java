@@ -35,7 +35,6 @@ public class PokemonGoMapInfoScraper implements AreaScraper {
       "-k " +
       "-H \"Cookie: {cookie}\" " +
       "-H \"dnt: 1\" " +
-      "-H \"accept-encoding: gzip, deflate, br\" " +
       "-H \"x-requested-with: XMLHttpRequest\" " +
       "-H \"accept-language: en-US,en;q=0.8\" " +
       "-H \"user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36\" " +
@@ -43,14 +42,12 @@ public class PokemonGoMapInfoScraper implements AreaScraper {
       "-H \"accept: */*\" " +
       "-H \"referer: https://www.pokemongomap.info/\" " +
       "-H \"authority: www.pokemongomap.info\" " +
-      "--data \"fromlat={minLat}&tolat={maxLat}&fromlng={minLong}&tolng={maxLong}&fpoke=0&fgym=1&farm=0&nests=0&raids=0&sponsor=0\" " +
-      "--compressed";
+      "--data \"fromlat={minLat}&tolat={maxLat}&fromlng={minLong}&tolng={maxLong}&fpoke=0&fgym=1&farm=0&nests=0&raids=0&sponsor=0\"";
 
   private final static String GYM_TEMPLATE = "curl " +
       "\"https://www.pokemongomap.info/includes/locdata.php\" " +
       "-k " +
       "-H \"Cookie: {cookie}\" " +
-      "-H \"Accept-Encoding: gzip, deflate, br\" " +
       "-H \"Accept-Language: en-US,en;q=0.8\" " +
       "-H \"User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36\" " +
       "-H \"Content-Type: application/x-www-form-urlencoded; charset=UTF-8\" " +
@@ -58,8 +55,7 @@ public class PokemonGoMapInfoScraper implements AreaScraper {
       "-H \"Referer: https://www.pokemongomap.info/\" " +
       "-H \"X-Requested-With: XMLHttpRequest\" " +
       "-H \"DNT: 1\" " +
-      "--data \"mid={gymId}\" " +
-      "--compressed";
+      "--data \"mid={gymId}\"";
 
   private final int divideThreshold;
   private final String userId;
