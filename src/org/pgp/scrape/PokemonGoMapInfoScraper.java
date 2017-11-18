@@ -26,12 +26,12 @@ public class PokemonGoMapInfoScraper implements AreaScraper {
       "updatetoken=0; " +
           "__cfduid={user_id};" +
           "PHPSESSID={session_id}; " +
-          "announcementnews4=1;announcementnews6=1;announcementnews8=1; " +
+          "announcementnews4=1;announcementnews6=1;announcementnews8=1;announcementnews9=1; " +
           "mapfilters=0[##split##]1[##split##]1[##split##]0[##split##]0[##split##]0[##split##]0[##split##]0[##split##]1[##split##]1[##split##]1[##split##]0; " +
           "latlngzoom=15[##split##]{curLatCenter}[##split##]{curLongCenter}";
 
   private final static String GYMS_TEMPLATE = "curl " +
-      "\"https://www.pokemongomap.info/includes/it43nmsq5.php\" " +
+      "\"https://www.pokemongomap.info/includes/it55nmsq9.php\" " +
       "-k " +
       "-H \"Cookie: {cookie}\" " +
       "-H \"dnt: 1\" " +
