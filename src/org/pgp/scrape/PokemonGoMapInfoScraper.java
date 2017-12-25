@@ -188,7 +188,7 @@ public class PokemonGoMapInfoScraper implements AreaScraper {
             process.destroy();
           }
 
-          Thread.sleep(5_000L);
+          Thread.sleep(10_000L);
         }
       } catch (final InterruptedException e) {
         logger.error("InterruptedException caught", e);
