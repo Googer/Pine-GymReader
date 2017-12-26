@@ -7,7 +7,7 @@ The PGMI scrape implementation requires having curl (https://curl.haxx.se/) in t
 
 Basic sample usage:
 
-`java -jar GymScraper.jar -scraper=scraper.xml -googleApiKey=<google API key> -minLat=40.0 -maxLat=41.0 -minLong=-80.5 -maxLong=-79.5`
+`java -jar GymScraper.jar -scraper=file:scraper.xml -googleApiKey=<google API key> -minLat=40.0 -maxLat=41.0 -minLong=-80.5 -maxLong=-79.5`
 
 scraper.xml contains scraper configuration, including its class and any parameters it needs to initialize.
 

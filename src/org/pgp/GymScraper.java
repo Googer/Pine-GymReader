@@ -67,7 +67,7 @@ public final class GymScraper {
 
       final String value = splitArg[1];
 
-      switch (splitArg[0].toLowerCase()) {
+        switch (splitArg[0].toLowerCase()) {
         case "minlat": {
           minLat = new BigDecimal(value, MathContext.DECIMAL32);
           break;
