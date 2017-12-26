@@ -1,0 +1,9 @@
+<component name="ArtifactManager">
+  <artifact type="jar" build-on-make="true" name="GymScraper:zip">
+    <output-path>$PROJECT_DIR$/out/artifacts/GymScraper_zip</output-path>
+    <root id="archive" name="GymScraper.zip">
+      <element id="artifact" artifact-name="GymScraper:jar" />
+      <element id="dir-copy" path="$PROJECT_DIR$/config" />
+    </root>
+  </artifact>
+</component>

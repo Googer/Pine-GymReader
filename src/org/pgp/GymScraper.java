@@ -7,7 +7,7 @@ import org.apache.logging.log4j.Logger;
 import org.pgp.geocode.GeocodeGyms;
 import org.pgp.object.Gym;
 import org.pgp.scrape.AreaScraper;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.context.support.FileSystemXmlApplicationContext;
 
 import java.io.*;
 import java.math.BigDecimal;
@@ -33,7 +33,7 @@ public final class GymScraper {
   }
 
   private static AreaScraper from(final String scraperConfiguration) {
-    try (final ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext(scraperConfiguration)) {
+    try (final FileSystemXmlApplicationContext context = new FileSystemXmlApplicationContext(scraperConfiguration)) {
       return context.getBean("scraper", AreaScraper.class);
     }
   }
