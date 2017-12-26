@@ -55,7 +55,7 @@ public final class CoordinateRange {
     this.maxLong = maxLong;
 
     midLat = minLat.add(maxLat.subtract(minLat).divide(new BigDecimal("2.0"), 8, RoundingMode.HALF_EVEN));
-    midLong = minLong.add(maxLong.subtract(minLong).divide(new BigDecimal("2.0"), 8, BigDecimal.ROUND_HALF_EVEN));
+    midLong = minLong.add(maxLong.subtract(minLong).divide(new BigDecimal("2.0"), 8, RoundingMode.HALF_EVEN));
   }
 
   public double area() {
@@ -63,7 +63,7 @@ public final class CoordinateRange {
   }
 
   public List<CoordinateRange> subDivide() {
-    return Arrays.asList(
+    return List.of(
         new CoordinateRange(minLat, midLat, minLong, midLong),
         new CoordinateRange(midLat, maxLat, minLong, midLong),
         new CoordinateRange(minLat, midLat, midLong, maxLong),
