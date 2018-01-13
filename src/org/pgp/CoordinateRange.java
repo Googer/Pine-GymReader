@@ -3,14 +3,17 @@ package org.pgp;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
-import java.util.Arrays;
+import java.text.NumberFormat;
 import java.util.List;
+import java.util.Locale;
 
 public final class CoordinateRange {
   public final static DecimalFormat formatter;
 
   static {
-    formatter = new DecimalFormat();
+    final NumberFormat numberFormatter = NumberFormat.getNumberInstance(Locale.US);
+    formatter = (DecimalFormat) numberFormatter;
+
     formatter.setMaximumFractionDigits(8);
     formatter.setMinimumFractionDigits(8);
     formatter.setGroupingUsed(false);
