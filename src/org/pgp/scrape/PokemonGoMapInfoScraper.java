@@ -14,6 +14,7 @@ import java.beans.ConstructorProperties;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -56,6 +57,8 @@ public class PokemonGoMapInfoScraper implements AreaScraper {
       "-H \"X-Requested-With: XMLHttpRequest\" " +
       "-H \"DNT: 1\" " +
       "--data \"mid={gymId}\"";
+
+  private final static BigDecimal COORDINATE_SCALE = new BigDecimal(1_852_000);
 
   private final int divideThreshold;
   private final String userId;
@@ -160,7 +163,17 @@ public class PokemonGoMapInfoScraper implements AreaScraper {
                                 new String(Base64.getDecoder().decode(siteObject.get("xgxg35").getAsString())));
                             if (siteType > 1) {
                               logger.info("    Found gym '" + siteName + "'.");
-                              return new Gym(gymId, siteName);
+                              final Gym gym = new Gym(gymId, siteName);
+                              final String latitude = new String(Base64.getDecoder().decode(siteObject.get("f24sfvs").getAsString()));
+                              final String longitude = new String(Base64.getDecoder().decode(siteObject.get("z3iafj").getAsString()));
+
+                              final GymInfo gymInfo = new GymInfo();
+                              gymInfo.setLatitude(new BigDecimal(latitude).divide(COORDINATE_SCALE));
+                              gymInfo.setLongitude(new BigDecimal(longitude).divide(COORDINATE_SCALE));
+
+                              gym.setGymInfo(gymInfo);
+
+                              return gym;
                             } else {
                               logger.debug("    Skipping site '" + siteName + "'.");
                             }
@@ -227,10 +240,8 @@ public class PokemonGoMapInfoScraper implements AreaScraper {
               logger.info("  Filling in location information for gym '" + gym.getGymName() + "'.");
 
               final String description = object.get("description").getAsString();
-              final String latitude = object.get("markerlat").getAsString();
-              final String longitude = object.get("markerlng").getAsString();
 
-              gym.setGymInfo(new GymInfo(description, latitude, longitude));
+              gym.getGymInfo().setGymDescription(description);
               gyms.add(gym);
             }
           } else if (!element.isJsonNull()) {
