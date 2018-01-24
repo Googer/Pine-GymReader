@@ -164,8 +164,8 @@ public class PokemonGoMapInfoScraper implements AreaScraper {
                             if (siteType > 1) {
                               logger.info("    Found gym '" + siteName + "'.");
                               final Gym gym = new Gym(gymId, siteName);
-                              final String latitude = new String(Base64.getDecoder().decode(siteObject.get("f24sfvs").getAsString()));
-                              final String longitude = new String(Base64.getDecoder().decode(siteObject.get("z3iafj").getAsString()));
+                              final String latitude = new String(Base64.getDecoder().decode(siteObject.get("z3iafj").getAsString()));
+                              final String longitude = new String(Base64.getDecoder().decode(siteObject.get("f24sfvs").getAsString()));
 
                               final GymInfo gymInfo = new GymInfo();
                               gymInfo.setLatitude(new BigDecimal(latitude).divide(COORDINATE_SCALE));
