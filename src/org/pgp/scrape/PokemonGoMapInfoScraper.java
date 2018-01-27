@@ -16,8 +16,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 
 public class PokemonGoMapInfoScraper implements AreaScraper {
@@ -26,9 +24,9 @@ public class PokemonGoMapInfoScraper implements AreaScraper {
   private final static String COOKIE =
       "updatetoken=0; " +
           "__cfduid={user_id};" +
-          "PHPSESSID={session_id}; " +
-          "announcementnews4=1;announcementnews6=1;announcementnews8=1;announcementnews9=1; " +
-          "mapfilters=0[##split##]1[##split##]1[##split##]0[##split##]0[##split##]0[##split##]0[##split##]0[##split##]1[##split##]1[##split##]1[##split##]0; " +
+          "PHPSESSID={session_id};" +
+          "announcementnews4=1;announcementnews6=1;announcementnews8=1;announcementnews9=1;announcementnews10=1;" +
+          "mapfilters=0[##split##]1[##split##]1[##split##]0[##split##]0[##split##]0[##split##]0[##split##]0[##split##]1[##split##]1[##split##]1[##split##]0;" +
           "latlngzoom=15[##split##]{curLatCenter}[##split##]{curLongCenter}";
 
   private final static String GYMS_TEMPLATE = "curl " +
@@ -103,8 +101,8 @@ public class PokemonGoMapInfoScraper implements AreaScraper {
     final Set<Gym> gyms = new TreeSet<>();
 
     try {
-      // maps from actual gym object to command to get detailed gym info, ordered by gym id's
-      final Map<Gym, String> newGymDetailsMap = new TreeMap<>();
+      // maps from actual gym object to command to get detailed gym info
+      final Stack<Map.Entry<Gym, String>> gymCommands = new Stack<>();
 
       try {
         while (!coordinateRanges.isEmpty()) {
@@ -149,7 +147,7 @@ public class PokemonGoMapInfoScraper implements AreaScraper {
 
                     logger.info("  " + entries.size() + " site(s) found...");
 
-                    newGymDetailsMap.putAll(entries.stream()
+                    entries.stream()
                         .map(entry -> {
                           final String siteId = entry.getKey();
                           final JsonElement site = entry.getValue();
@@ -184,9 +182,7 @@ public class PokemonGoMapInfoScraper implements AreaScraper {
                           return null;
                         })
                         .filter(Objects::nonNull)
-                        .collect(Collectors.toMap(
-                            Function.identity(),
-                            this::generateDetailCommand)));
+                        .forEach(gym -> gymCommands.push(new AbstractMap.SimpleImmutableEntry<>(gym, generateDetailCommand(gym))));
                   }
                 }
               } else if (!element.isJsonNull()) {
@@ -206,11 +202,6 @@ public class PokemonGoMapInfoScraper implements AreaScraper {
       } catch (final InterruptedException e) {
         logger.error("InterruptedException caught", e);
       }
-
-      final Stack<Map.Entry<Gym, String>> gymCommands = new Stack<>();
-
-      newGymDetailsMap.entrySet()
-          .forEach(gymCommands::push);
 
       logger.info(gymCommands.size() + " new gyms found.");
 
