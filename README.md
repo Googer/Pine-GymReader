@@ -1,9 +1,9 @@
-# GymScraper
-This is a simple command-line utility to scrape map data for Pokemon Go.
+# Pine-GymReader
+This is a simple command-line utility to generate the map data for the Professor Pine raid coordination bot.
 
-It is extensible to scrape from any source but the only implemented scraper uses PokemonGoMap.info as its source.  It uses a subdividing algorithm to cover the requested latitude-longitude range to fetch the initial list of sites (which are then filtered to just gyms), then issues requests for each discovered gym to obtain additional information about it (exact latitude-longitude coordinates, additional text description, etc.)
+It is extensible to generate gym data from any source.
 
-The PGMI scrape implementation requires having curl (https://curl.haxx.se/) in the path, as it is what issues the actual requests.
+The PGMI scrape implementation (deprecated) requires having curl (https://curl.haxx.se/) in the path, as it is what issues the actual requests.
 
 Basic sample usage:
 
