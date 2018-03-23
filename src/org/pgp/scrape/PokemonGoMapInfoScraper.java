@@ -153,7 +153,6 @@ public class PokemonGoMapInfoScraper implements AreaScraper {
                           final JsonElement site = entry.getValue();
 
                           if (site.isJsonObject()) {
-                            final long gymId = Long.parseLong(siteId);
                             final JsonObject siteObject = site.getAsJsonObject();
                             final String siteName = siteObject.get("rfs21d").getAsString();
 
@@ -161,7 +160,7 @@ public class PokemonGoMapInfoScraper implements AreaScraper {
                                 new String(Base64.getDecoder().decode(siteObject.get("xgxg35").getAsString())));
                             if (siteType > 1) {
                               logger.info("    Found gym '" + siteName + "'.");
-                              final Gym gym = new Gym(gymId, siteName);
+                              final Gym gym = new Gym(siteId, siteName);
                               final String latitude = new String(Base64.getDecoder().decode(siteObject.get("z3iafj").getAsString()));
                               final String longitude = new String(Base64.getDecoder().decode(siteObject.get("f24sfvs").getAsString()));
 

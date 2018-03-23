@@ -3,7 +3,7 @@ package org.pgp.object;
 import java.util.Objects;
 
 public final class Gym implements Comparable<Gym> {
-  private long gymId;
+  private String gymId;
   private String gymName;
 
   private GymInfo gymInfo;
@@ -11,21 +11,21 @@ public final class Gym implements Comparable<Gym> {
   public Gym() {
   }
 
-  public Gym(final long gymId, final String gymName) {
+  public Gym(final String gymId, final String gymName) {
     this(gymId, gymName, null);
   }
 
-  public Gym(final long gymId, final String gymName, final GymInfo gymInfo) {
+  public Gym(final String gymId, final String gymName, final GymInfo gymInfo) {
     this.gymId = gymId;
     this.gymName = gymName;
     this.gymInfo = gymInfo;
   }
 
-  public long getGymId() {
+  public String getGymId() {
     return gymId;
   }
 
-  public void setGymId(final long gymId) {
+  public void setGymId(final String gymId) {
     this.gymId = gymId;
   }
 
@@ -68,6 +68,6 @@ public final class Gym implements Comparable<Gym> {
 
   @Override
   public int compareTo(final Gym other) {
-    return Math.toIntExact(gymId - other.gymId);
+    return gymId.compareTo(other.gymId);
   }
 }
