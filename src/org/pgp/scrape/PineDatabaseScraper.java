@@ -63,6 +63,8 @@ public class PineDatabaseScraper implements AreaScraper {
         gym.setGymInfo(gymInfo);
 
         gyms.add(gym);
+
+        logger.debug("Added gym '" + name + "'.");
       }
 
       return gyms;
