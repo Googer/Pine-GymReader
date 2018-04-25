@@ -38,6 +38,7 @@ public class PineDatabaseScraper implements AreaScraper {
     dataSource.setUser(user);
     dataSource.setPassword(password);
     dataSource.setDatabaseName(schema);
+    dataSource.setServerTimezone("UTC");
 
     return dataSource.getConnection();
   }

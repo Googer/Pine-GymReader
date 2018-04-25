@@ -2,10 +2,10 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
-    <bean id="scraper" class="org.pgp.scrape.PineDatabaseScraper">
-        <constructor-arg name="host" value="localhost"/>
-        <constructor-arg name="user" value="root"/>
-        <constructor-arg name="password" value="mysql"/>
-        <constructor-arg name="schema" value="gyms"/>
-    </bean>
+<bean id="scraper" class="org.pgp.scrape.PineDatabaseScraper">
+    <constructor-arg name="host" value="localhost"/>
+    <constructor-arg name="user" value="root"/>
+    <constructor-arg name="password" value="mysql"/>
+    <constructor-arg name="schema" value="gyms"/>
+</bean>
 </beans>
