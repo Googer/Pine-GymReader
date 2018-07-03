@@ -55,7 +55,7 @@ public final class GymScraper {
 
     String _googleApiKey = null;
 
-    for (final String arg : args) {
+    for (final String arg: args) {
       if (!arg.startsWith("-")) {
         continue;
       }
@@ -67,7 +67,7 @@ public final class GymScraper {
 
       final String value = splitArg[1];
 
-        switch (splitArg[0].toLowerCase()) {
+      switch (splitArg[0].toLowerCase()) {
         case "minlat": {
           minLat = new BigDecimal(value, MathContext.DECIMAL32);
           break;
@@ -156,7 +156,20 @@ public final class GymScraper {
     }
 
     if (googleApiKey != null) {
-      new GeocodeGyms(googleApiKey).geocode(newGyms);
+      if (incrementalUpdate) {
+        // Copy geocoding data from existing gyms
+        existingGyms.forEach(gym -> {
+          newGyms.stream()
+              .filter(newGym -> newGym.getGymId().equals(gym.getGymId()))
+              .findFirst()
+              .ifPresent(newGym -> {
+                newGym.getGymInfo().setAddressComponents(gym.getGymInfo().getAddressComponents());
+                newGym.getGymInfo().setPlaces(gym.getGymInfo().getPlaces());
+              });
+        });
+      }
+
+      new GeocodeGyms(googleApiKey).geocode(newGyms, incrementalUpdate);
     }
 
     final Set<Gym> outputGyms;
@@ -168,6 +181,7 @@ public final class GymScraper {
 
         existingGyms.removeAll(missingGyms);
       }
+      existingGyms.removeAll(newGyms);
       existingGyms.addAll(newGyms);
 
       outputGyms = existingGyms;

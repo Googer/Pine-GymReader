@@ -12,13 +12,16 @@ public final class GymInfo {
   private Collection<Geocode> addressComponents;
   private Collection<String> places;
 
+  private String nearestGym;
+
   public GymInfo() {
   }
 
-  public GymInfo(final String gymDescription, final String latitude, final String longitude) {
+  public GymInfo(final String gymDescription, final String latitude, final String longitude, final String nearestGym) {
     this.gymDescription = gymDescription;
     this.latitude = new BigDecimal(latitude);
     this.longitude = new BigDecimal(longitude);
+    this.nearestGym = nearestGym;
   }
 
   public String getGymDescription() {
@@ -61,6 +64,14 @@ public final class GymInfo {
     this.places = places;
   }
 
+  public String getNearestGym() {
+    return nearestGym;
+  }
+
+  public void setNearestGym(final String nearestGym) {
+    this.nearestGym = nearestGym;
+  }
+
   @Override
   public boolean equals(final Object obj) {
     if (this == obj) {
@@ -74,7 +85,8 @@ public final class GymInfo {
           Objects.equals(latitude, other.latitude) &&
           Objects.equals(longitude, other.longitude) &&
           Objects.equals(addressComponents, other.addressComponents) &&
-          Objects.equals(places, other.places);
+          Objects.equals(places, other.places) &&
+          Objects.equals(nearestGym, other.nearestGym);
     }
 
     return false;
@@ -82,6 +94,6 @@ public final class GymInfo {
 
   @Override
   public int hashCode() {
-    return Objects.hash(gymDescription, latitude, longitude, addressComponents, places);
+    return Objects.hash(gymDescription, latitude, longitude, addressComponents, places, nearestGym);
   }
 }

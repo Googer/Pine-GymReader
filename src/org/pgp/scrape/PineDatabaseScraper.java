@@ -47,7 +47,7 @@ public class PineDatabaseScraper implements AreaScraper {
   public Set<Gym> scrapeArea(final CoordinateRange coordinateRange) {
     try (final Connection connection = connect();
          final Statement statement = connection.createStatement();
-         final ResultSet resultSet = statement.executeQuery("SELECT gymId, name, description, latitude, longitude FROM Gym WHERE " +
+         final ResultSet resultSet = statement.executeQuery("SELECT gymId, name, description, latitude, longitude, nearestGym FROM Gym WHERE " +
              "latitude BETWEEN " + coordinateRange.getMinLat() + " AND " + coordinateRange.getMaxLat() + " AND " +
              "longitude BETWEEN " + coordinateRange.getMinLong() + " AND " + coordinateRange.getMaxLong())) {
       final Set<Gym> gyms = new TreeSet<>();
@@ -58,9 +58,10 @@ public class PineDatabaseScraper implements AreaScraper {
         final String description = resultSet.getString("description");
         final BigDecimal latitude = resultSet.getBigDecimal("latitude");
         final BigDecimal longitude = resultSet.getBigDecimal("longitude");
+        final String nearestGym = resultSet.getString("nearestGym");
 
         final Gym gym = new Gym(gymId, name);
-        final GymInfo gymInfo = new GymInfo(description, latitude.toString(), longitude.toString());
+        final GymInfo gymInfo = new GymInfo(description, latitude.toString(), longitude.toString(), nearestGym);
         gym.setGymInfo(gymInfo);
 
         gyms.add(gym);
