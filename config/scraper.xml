@@ -5,7 +5,7 @@
 <bean id="scraper" class="org.pgp.scrape.PineDatabaseScraper">
     <constructor-arg name="host" value="localhost"/>
     <constructor-arg name="user" value="root"/>
-    <constructor-arg name="password" value="mysql"/>
+    <constructor-arg name="password" value="pine"/>
     <constructor-arg name="schema" value="gyms"/>
 </bean>
 </beans>

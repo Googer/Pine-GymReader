@@ -69,7 +69,7 @@ public class GeocodeGyms {
       final GymInfo gymInfo = gym.getGymInfo();
       final String currentNearestGym = gymInfo.getNearestGym();
 
-      if (currentNearestGym == null || (incrementalUpdate && !currentNearestGym.equals(nearestGymWithDistance.gymId))) {
+      if (!incrementalUpdate || currentNearestGym == null || (incrementalUpdate && !currentNearestGym.equals(nearestGymWithDistance.gymId))) {
         logger.info("  Getting geocode information for gym '" + gym.getGymName() + "'.");
         gymInfo.setNearestGym(nearestGymWithDistance.gymId);
 
